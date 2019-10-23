@@ -23,6 +23,13 @@ class Mailer extends BaseMailer
 	/** @var bool использовать энд-поинт для США (TRUE) или Европы (FALSE) */
 	public $usaCustomer = true;
 
+	/** @var int код ответа сервера */
+	protected $_responseStatusCode;
+	/** @var string текст ответа сервера */
+	protected $_responseText = '';
+	/** @var string текст сообщения об ошибке при фолте */
+	protected $_errorMessage = '';
+
 	//-----------------------------------------
 	public $messageClass = 'm00nk\mailgun\Message';
 
@@ -41,6 +48,10 @@ class Mailer extends BaseMailer
 	 */
 	protected function sendMessage($message)
 	{
+		$this->_errorMessage = '';
+		$this->_responseStatusCode = null;
+		$this->_responseText = '';
+
 		try{
 			$address = $message->getTo();
 			if(is_array($address)) {
@@ -100,24 +111,40 @@ class Mailer extends BaseMailer
 				'multipart' => $mp,
 			]);
 
-			$statusCode = $response->getStatusCode();
+			$this->_responseStatusCode = $response->getStatusCode();
 			$responseObject = $response->getBody();
-			$responseText = (string)$responseObject;
+			$this->_responseText = (string)$responseObject;
 
-			if($statusCode != 200) {
-
-				Yii::error('Mailgun error: response status: '.$statusCode.'. Message: '.$responseText, __METHOD__);
+			if($this->_responseStatusCode != 200) {
+				$this->_errorMessage = $this->_responseText;
+				Yii::error('Mailgun error: response status: '.$this->_responseStatusCode.'. Message: '.$this->_errorMessage, __METHOD__);
 
 				return false;
 			}
 
-			Yii::info('Response: '.print_r($responseText, true), __METHOD__);
+			Yii::info('Response: '.print_r($this->_responseText, true), __METHOD__);
 		} catch(\Exception $e){
-			Yii::error('Mailgun error:'.$e->getMessage(), __METHOD__);
+			$this->_errorMessage = $e->getMessage();
+			Yii::error('Mailgun error:'.$this->_errorMessage, __METHOD__);
 
 			return false;
 		}
 
 		return true;
+	}
+
+	public function getResponseStatusCode()
+	{
+		return $this->_responseStatusCode;
+	}
+
+	public function getResponseText()
+	{
+		return $this->_responseText;
+	}
+
+	public function getErrorMessage()
+	{
+		return $this->_errorMessage;
 	}
 }
