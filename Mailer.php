@@ -53,13 +53,6 @@ class Mailer extends BaseMailer
 		$this->_responseText = '';
 
 		try{
-			$address = $message->getTo();
-			if(is_array($address)) {
-				$address = implode(', ', $address);
-			}
-
-			Yii::info('Sending email "'.$message->getSubject().'" to "'.$address.'"', __METHOD__);
-
 			if($this->testMode) {
 				$message->setTestMode(true);
 			}
